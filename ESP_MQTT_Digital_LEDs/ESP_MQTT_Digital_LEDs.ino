@@ -31,25 +31,27 @@
 
 
 /************ WIFI and MQTT Information (CHANGE THESE FOR YOUR SETUP) ******************/
-const char* ssid = "YourSSID"; //type your WIFI information inside the quotes
-const char* password = "YourWIFIpassword";
-const char* mqtt_server = "your.MQTT.server.ip";
-const char* mqtt_username = "yourMQTTusername";
-const char* mqtt_password = "yourMQTTpassword";
+const char* ssid = "*****"; //type your WIFI information inside the quotes
+const char* password = "******";
+const char* mqtt_server = "*****";
+const char* mqtt_username = "";
+const char* mqtt_password = "";
 const int mqtt_port = 1883;
+
+int MILLION = 100000;
 
 
 
 /**************************** FOR OTA **************************************************/
-#define SENSORNAME "porch" //change this to whatever you want to call your device
-#define OTApassword "yourOTApassword" //the password you will need to enter to upload remotely via the ArduinoIDE
+#define SENSORNAME "stepenice" //change this to whatever you want to call your device
+#define OTApassword "bpetar" //the password you will need to enter to upload remotely via the ArduinoIDE
 int OTAport = 8266;
 
 
 
 /************* MQTT TOPICS (change these topics as you wish)  **************************/
-const char* light_state_topic = "bruh/porch";
-const char* light_set_topic = "bruh/porch/set";
+const char* light_state_topic = "paxyhome/stepenice";
+const char* light_set_topic = "paxyhome/stepenice/set";
 
 const char* on_cmd = "ON";
 const char* off_cmd = "OFF";
@@ -66,11 +68,11 @@ const int BUFFER_SIZE = JSON_OBJECT_SIZE(10);
 
 
 /*********************************** FastLED Defintions ********************************/
-#define NUM_LEDS    186
-#define DATA_PIN    5
+#define NUM_LEDS    50
+#define DATA_PIN    6
 //#define CLOCK_PIN 5
 #define CHIPSET     WS2811
-#define COLOR_ORDER BRG
+#define COLOR_ORDER RGB
 
 byte realRed = 0;
 byte realGreen = 0;
@@ -498,11 +500,45 @@ void loop() {
   }
 
 
-
   client.loop();
 
   ArduinoOTA.handle();
 
+
+ //EFFECT light-in light-out
+  if (effectString == "light-in") {
+    setColor(0, 0, 0);
+    // First slide the led in one direction
+    for (int i = 0; i < NUM_LEDS; i++) {
+      // Set the i'th led to red
+      leds[i] = CRGB(realRed, realGreen, realBlue);
+      // Show the leds
+      showleds();
+      // now that we've shown the leds, reset the i'th led to black
+      // leds[i] = CRGB::Black;
+      delay(50);
+    }
+  effectString="solid";
+  sendState();
+  }
+  if (effectString == "light-out") {
+    setColor(realRed, realGreen, realBlue);
+    for (int i = (NUM_LEDS) - 1; i >= 0; i--) {
+      // Set the i'th led to red
+      leds[i] = CRGB::Black;
+      // Show the leds
+      showleds();
+      // now that we've shown the leds, reset the i'th led to black
+      delay(50);
+    }
+  stateOn = false;
+  sendState();
+  onbeforeflash = false;
+  effectString="solid";
+  transitionTime = 0;
+  flash = false;
+  startFade=false;
+  }
 
   //EFFECT BPM
   if (effectString == "bpm") {
@@ -552,6 +588,7 @@ void loop() {
     for (int i = 0; i < NUM_LEDS; i++) {
       // Set the i'th led to red
       leds[i] = CHSV(hue++, 255, 255);
+      setColor(flashRed, flashGreen, flashBlue);
       // Show the leds
       showleds();
       // now that we've shown the leds, reset the i'th led to black
