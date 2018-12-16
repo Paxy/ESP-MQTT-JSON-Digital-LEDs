@@ -6,12 +6,15 @@ mqtt:
   password: YOURPASSWORD
 
 light:
-  - platform: mqtt_json
-    name: "Porch Strip"
-    state_topic: "bruh/porch"
-    command_topic: "bruh/porch/set"
+  - platform: mqtt
+    schema: json
+    name: "Stepenice LED"
+    state_topic: "paxyhome/stepenice"
+    command_topic: "paxyhome/stepenice/set"
     effect: true
     effect_list:
+      - light-in
+      - light-out
       - bpm
       - candy cane  
       - confetti  
@@ -36,23 +39,50 @@ light:
     optimistic: false
     qos: 0
 
-input_slider:
-  porch_animation_speed:
-    name: Porch Animation Speed
-    initial: 150
-    min: 1
-    max: 150
-    step: 10
 
 automation: 
-  - alias: "Porch Animation Speed"
-    initial_state: True
-    hide_entity: False
-    trigger:
-      - platform: state
-        entity_id: input_slider.porch_animation_speed
-    action:
-      - service: mqtt.publish
-        data_template:
-          topic: "bruh/porch/set"
-          payload: '{"transition":{{ trigger.to_state.state | int }}}'
+- id: -Stepeniste- Upali svetlo na pokret
+  alias: -Stepeniste- Upali svetlo na pokret
+  hide_entity: false
+  trigger:
+    platform: state
+    from: 'off'
+    to: 'on'
+    entity_id: binary_sensor.motion_sensor_158d000121a0b3
+  condition:
+    condition: state
+    entity_id: input_boolean.auto_light
+    state: 'on'
+  action:
+  - service: light.turn_on
+    data:
+      entity_id: light.hodnik
+      brightness: 255
+      rgb_color:
+      - 255
+      - 255
+      - 255
+      transition: 0
+  - service: light.turn_on
+    data:
+      entity_id: light.stepenice_led
+      effect: light-in
+- id: -Stepeniste- Ugasi svetlo u hodniku kada nema nikog
+  alias: -Stepeniste- Ugasi svetlo u hodniku kada nema nikog
+  hide_entity: false
+  trigger:
+    platform: state
+    entity_id: binary_sensor.motion_sensor_158d000121a0b3
+    to: 'off'
+    from: 'on'
+  condition:
+    condition: state
+    entity_id: input_boolean.auto_light
+    state: 'on'
+  action:
+  - service: light.turn_off
+    entity_id: light.hodnik
+  - service: light.turn_on
+    data:
+      entity_id: light.stepenice_led
+      effect: light-out
